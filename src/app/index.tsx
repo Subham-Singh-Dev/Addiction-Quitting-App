@@ -18,21 +18,12 @@ export default function Index() {
   const { days, hours, minutes, seconds } = getStreakBreakdown(STREAK_START, now);
 
   return (
-    <View
-      style={{
-        flex: 1,
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "#4f46e5",
-      }}
-    >
-      <Text style={{ fontSize: 96, fontWeight: "bold", color: "white" }}>
-        {days}
-      </Text>
-      <Text style={{ fontSize: 20, color: "#c7d2fe", marginBottom: 24 }}>
+    <View className="flex-1 items-center justify-center bg-indigo-600">
+      <Text className="text-8xl font-bold text-white">{days}</Text>
+      <Text className="mb-6 text-xl text-indigo-200">
         {days === 1 ? "day" : "days"}
       </Text>
-      <Text style={{ fontSize: 36, fontWeight: "600", color: "white" }}>
+      <Text className="text-4xl font-semibold text-white">
         {pad(hours)}:{pad(minutes)}:{pad(seconds)}
       </Text>
     </View>
