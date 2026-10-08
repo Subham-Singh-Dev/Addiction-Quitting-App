@@ -86,7 +86,7 @@ PROJECT_NOTES.md
 * [x] Confirm a styled "Hello" screen renders on phone
 * [x] Create folders from section 4
 * [x] Commit: "chore: project setup"
-* [x] Verify NativeWind `className` works on a re-rendering screen (next)
+* [x] Verify NativeWind `className` works on a re-rendering screen
 
 ## 6. Roadmap (revised)
 
@@ -95,6 +95,7 @@ PROJECT_NOTES.md
 * [x] Streak calculation function
 * [x] Home screen live counter (hardcoded start date)
 * [x] Home screen styled with NativeWind `className`
+* [x] Commit: "feat: live streak counter on home screen"
 * [ ] SQLite schema + migrations
 * [ ] Streak start/reset using SQLite (replace hardcoded date)
 * [ ] Unit tests for streak functions (needs a test runner: Jest setup)
@@ -130,14 +131,15 @@ PROJECT_NOTES.md
 
 ## 8. Status
 
-* **Today (2026-10-08):** Home screen live counter built and debugged.
-* **Done:** environment, dependencies, NativeWind v4 config, folders, streak calculation function, Home screen live counter (days + HH:MM:SS, ticking every second, verified on a real Android phone via Expo Go).
-* **Current state of `src/app/index.tsx`:** uuses className (start date still hardcoded). Set the next step to the SQLite trackers table.
-* **Config note:** `reactCompiler` in `app.json` was set to `false` while debugging. It turned out NOT to be the cause. Check the file and decide whether to set it back to `true`.
+* **Today (2026-10-08):** Home screen live counter built, debugged, styled with NativeWind, and committed.
+* **Done:** environment, dependencies, NativeWind v4 config, folders, streak calculation function, Home live counter (days + HH:MM:SS, ticking every second, verified on a real Android phone via Expo Go), `className` styling confirmed, lint + tsc clean, committed.
+* **Current state of `src/app/index.tsx`:** uses NativeWind `className`; start date still hardcoded.
+* **Config note:** `reactCompiler` in `app.json` is now `true`. It was never the cause of the crash.
 * **Next:**
-  1. Commit the working counter (`git add .` then `git commit -m "feat: live streak counter on home screen"`).
-  2. Switch Home to NativeWind `className` and confirm it works.
-  3. Then SQLite `trackers` table.
+  1. SQLite `trackers` table (`src/db/client.ts`, schema + migration, `trackers.ts` helpers).
+  2. Home loads `streak_start_date` from SQLite instead of the hardcoded date.
+  3. Reset button on Home (first step of the reset-with-reflection flow).
+  4. Jest setup + unit tests for the streak functions.
 * **Blocked / Questions:** (none)
 * **Known cleanup later:** starter-template leftovers (`explore.tsx`, `animated-icon`, `hint-row`, `web-badge`, Expo logo splash, "Expo Starter" label in `app-tabs.web.tsx`).
 
@@ -155,7 +157,7 @@ PROJECT_NOTES.md
 | 2026-10-08 | Home counter keeps only `now` in state and derives the breakdown from `streak_start_date` each render | Follows design decision #1: cannot drift |
 | 2026-10-08 | Leave `babel.config.js` as is (`babel-preset-expo` with `jsxImportSource: "nativewind"` + `nativewind/babel`) | Tests showed it was not the cause of the crash |
 
-2026-10-08, “NativeWind className confirmed working on Android”, with the reason “Earlier plain-style version was only for debugging”.
+| 2026-10-08 | Set `reactCompiler` back to `true` in `app.json` | Was never the cause of the crash; Home works with it on |
 
 ## 10. Debugging Lessons
 
