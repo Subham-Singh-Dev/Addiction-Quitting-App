@@ -1,8 +1,13 @@
 import { useSQLiteContext } from "expo-sqlite";
 import { useEffect, useState } from "react";
-import { Text, View } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
 
-import { getOrCreateDefaultTracker, type Tracker } from "@/db/trackers";
+import {
+  getDefaultTracker,
+  getOrCreateDefaultTracker,
+  resetTracker,
+  type Tracker,
+} from "@/db/trackers";
 import { getStreakBreakdown } from "@/features/streak/calculateStreak";
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -42,6 +47,26 @@ export default function Index() {
     tracker.streak_start_date,
     now
   );
+  const bestDays = Math.max(tracker.best_streak_days, days);
+
+  const handleReset = () => {
+    Alert.alert(
+      "Start again?",
+      "Your best streak is saved. A slip doesn't erase your progress.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Start again",
+          style: "destructive",
+          onPress: async () => {
+            await resetTracker(db, tracker.id, days);
+            const updated = await getDefaultTracker(db);
+            if (updated) setTracker(updated);
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <View className="flex-1 items-center justify-center bg-indigo-600">
@@ -52,6 +77,17 @@ export default function Index() {
       <Text className="text-4xl font-semibold text-white">
         {pad(hours)}:{pad(minutes)}:{pad(seconds)}
       </Text>
+
+      <Text className="mt-8 text-base text-indigo-200">
+        Best: {bestDays} {bestDays === 1 ? "day" : "days"}
+      </Text>
+
+      <Pressable
+        onPress={handleReset}
+        className="mt-10 rounded-full bg-white/20 px-8 py-3"
+      >
+        <Text className="text-base font-medium text-white">I slipped</Text>
+      </Pressable>
     </View>
   );
 }
