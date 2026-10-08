@@ -86,7 +86,7 @@ PROJECT_NOTES.md
 * [x] Confirm a styled "Hello" screen renders on phone
 * [x] Create folders from section 4
 * [x] Commit: "chore: project setup"
-* [ ] Verify NativeWind `className` works on a re-rendering screen (next)
+* [x] Verify NativeWind `className` works on a re-rendering screen (next)
 
 ## 6. Roadmap (revised)
 
@@ -94,7 +94,7 @@ PROJECT_NOTES.md
 
 * [x] Streak calculation function
 * [x] Home screen live counter (hardcoded start date)
-* [ ] Home screen styled with NativeWind `className`
+* [x] Home screen styled with NativeWind `className`
 * [ ] SQLite schema + migrations
 * [ ] Streak start/reset using SQLite (replace hardcoded date)
 * [ ] Unit tests for streak functions (needs a test runner: Jest setup)
@@ -132,7 +132,7 @@ PROJECT_NOTES.md
 
 * **Today (2026-10-08):** Home screen live counter built and debugged.
 * **Done:** environment, dependencies, NativeWind v4 config, folders, streak calculation function, Home screen live counter (days + HH:MM:SS, ticking every second, verified on a real Android phone via Expo Go).
-* **Current state of `src/app/index.tsx`:** uses plain `style={{...}}` (from debugging tests), hardcoded `STREAK_START = "2026-10-05T08:00:00.000Z"`. Not yet converted back to `className`.
+* **Current state of `src/app/index.tsx`:** uuses className (start date still hardcoded). Set the next step to the SQLite trackers table.
 * **Config note:** `reactCompiler` in `app.json` was set to `false` while debugging. It turned out NOT to be the cause. Check the file and decide whether to set it back to `true`.
 * **Next:**
   1. Commit the working counter (`git add .` then `git commit -m "feat: live streak counter on home screen"`).
@@ -155,12 +155,16 @@ PROJECT_NOTES.md
 | 2026-10-08 | Home counter keeps only `now` in state and derives the breakdown from `streak_start_date` each render | Follows design decision #1: cannot drift |
 | 2026-10-08 | Leave `babel.config.js` as is (`babel-preset-expo` with `jsxImportSource: "nativewind"` + `nativewind/babel`) | Tests showed it was not the cause of the crash |
 
+2026-10-08, “NativeWind className confirmed working on Android”, with the reason “Earlier plain-style version was only for debugging”.
+
 ## 10. Debugging Lessons
 
 * The first lines of an error show the real file/line. Read the top of the log first (the crash was in `calculateStreak.ts` line 29, not in the screen).
 * When an error is in library code (Expo Router, React), suspect something in **your own files** that loads at startup before blaming config.
 * Debug by elimination: shrink the screen to the simplest version that works, then add one piece at a time (plain counter, then streak import, then `className`).
 * Useful checks: `npx expo-doctor`, `npx expo install --check`, `npm ls react react-dom react-native` (should show one React copy), `npx expo start -c` (clear cache).
+
+* note: that eslint and eslint-config-expo are dev dependencies, and that the eslint-disable comment in use-color-scheme.web.ts is intentional.
 
 ## 11. Workflow Rules (for me)
 
