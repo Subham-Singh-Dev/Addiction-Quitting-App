@@ -156,7 +156,6 @@ PROJECT_NOTES.md
 | 2026-10-08 | Keep `src/features/**/*.ts` free of React/hooks | Hook code (`useState`/`useEffect`) accidentally ended up in `calculateStreak.ts` and crashed the app on load ("Invalid hook call" / "Rendered fewer hooks than expected") |
 | 2026-10-08 | Home counter keeps only `now` in state and derives the breakdown from `streak_start_date` each render | Follows design decision #1: cannot drift |
 | 2026-10-08 | Leave `babel.config.js` as is (`babel-preset-expo` with `jsxImportSource: "nativewind"` + `nativewind/babel`) | Tests showed it was not the cause of the crash |
-
 | 2026-10-08 | Set `reactCompiler` back to `true` in `app.json` | Was never the cause of the crash; Home works with it on |
 
 ## 10. Debugging Lessons
