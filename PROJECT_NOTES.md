@@ -1,7 +1,7 @@
 # PROJECT_NOTES.md
 
 > Paste this at the start of every new Claude chat. Update **Section 8 (Status)** and **Section 9 (Decision Log)** after every work session.
-> Last updated: 2026-10-08
+> Last updated: 2026-10-09
 
 ## 1. Project Summary
 
@@ -23,6 +23,7 @@
 | Privacy | expo-local-authentication, expo-secure-store | App lock, secure storage (installed, not used yet) |
 | Notifications | expo-notifications (LOCAL daily reminders) | No backend needed for v1 (installed, not used yet) |
 | Backend (v2) | Supabase (Auth, Postgres, RLS) | Leaderboard only |
+| Testing | Jest + `jest-expo` preset, `@types/jest` (SDK-matched) | Pure logic tests live next to the code, never inside `src/app/` |
 
 **Deferred (do NOT add yet):** PowerSync, WatermelonDB, Skia, push notifications, EAS production builds.
 
@@ -44,8 +45,8 @@ Routes live in `src/app/` (not `app/`). `@/` is a shortcut for `src/`.
 ```
 src/
   app/                       # Expo Router screens (every file = a screen)
-    _layout.tsx              # Root: ThemeProvider, splash overlay, <AppTabs />, imports global.css
-    index.tsx                # Home: live streak counter  <-- working
+    _layout.tsx              # Root: ThemeProvider, splash overlay, SQLiteProvider (streak.db) wrapping <AppTabs />, imports global.css
+    index.tsx                # Home: live counter, Best streak, "I slipped" reset (loads from SQLite)  <-- working
     explore.tsx              # Starter-template screen (to be removed/replaced later)
   components/
     app-tabs.tsx             # NativeTabs (Home, Explore) for Android/iOS
@@ -54,10 +55,13 @@ src/
     ui/collapsible.tsx
   constants/theme.ts         # Colors, Fonts, Spacing (starter template)
   hooks/                     # use-theme, use-color-scheme (starter template)
-  db/                        # (empty) SQLite client, schema, migrations
+  db/
+    migrations.ts            # migrateDbIfNeeded (PRAGMA user_version), creates trackers table  <-- done
+    trackers.ts              # getDefaultTracker, createTracker, getOrCreateDefaultTracker, resetTracker  <-- done
   features/
     streak/
       calculateStreak.ts     # getStreakDays, getStreakBreakdown (pure logic)  <-- done
+      calculateStreak.test.ts  # Jest tests (sanity test only so far)
     journal/                 # (empty)
     xp/                      # (empty)
   lib/                       # (empty) helpers (dates, security)
@@ -93,12 +97,14 @@ PROJECT_NOTES.md
 **Phase 1: Local core (Weeks 1-2)**
 
 * [x] Streak calculation function
-* [x] Home screen live counter (hardcoded start date)
+* [x] Home screen live counter
 * [x] Home screen styled with NativeWind `className`
 * [x] Commit: "feat: live streak counter on home screen"
-* [x] SQLite schema + migrations
-* [x] Streak start/reset using SQLite (replace hardcoded date)
-* [ ] Unit tests for streak functions (needs a test runner: Jest setup)
+* [x] SQLite schema + migrations (trackers table)
+* [x] Streak start/reset using SQLite (Home loads from DB, "I slipped" resets, best streak saved)
+* [x] Jest setup (jest-expo)
+* [ ] Unit tests for streak functions (real tests)
+* [ ] Reset with reflection (relapses table, migration v2)
 * [ ] Daily check-in + journal
 * [ ] XP, levels, basic milestones
 * [ ] App lock + local reminder notification
@@ -131,13 +137,13 @@ PROJECT_NOTES.md
 
 ## 8. Status
 
-* **Today (2026-10-08):** Home screen live counter built, debugged, styled with NativeWind, and committed.
-* **Done:** environment, dependencies, NativeWind v4 config, folders, streak calculation function, SQLite schema + migrations, SQLite-backed streak start/reset, Home live counter (days + HH:MM:SS, ticking every second, verified on a real Android phone via Expo Go), `className` styling confirmed, lint + tsc clean, committed.
-* **Current state of `src/app/index.tsx`:** uses NativeWind `className`; streak start date loads from SQLite.
-* **Config note:** `reactCompiler` in `app.json` is now `true`. It was never the cause of the crash.
+* **Today (2026-10-09):** SQLite + reset flow + Jest setup done and committed.
+* **Done:** environment, deps, NativeWind v4, streak calculation, Home live counter, SQLite `trackers` table with `PRAGMA user_version` migrations, Home loads start date from DB (persistence verified across app restarts), "I slipped" reset with confirm dialog, best streak saved and shown (verified with a faked 3-day streak), Jest + jest-expo installed, sanity test passing, `tsc` and lint clean.
+* **Config note:** `reactCompiler` is `true`.
 * **Next:**
-  1. Reset-with-reflection screen (reflection + trigger saved to a `relapses` table).
-  2. Jest setup + unit tests for the streak functions.
+  1. Write real Jest tests for `calculateStreak.ts` (24h boundary, breakdown, future date, invalid input).
+  2. Reset with reflection: migration v2 adds `relapses` table, reflection + trigger form.
+  3. Daily check-in + journal.
 * **Blocked / Questions:** (none)
 * **Known cleanup later:** starter-template leftovers (`explore.tsx`, `animated-icon`, `hint-row`, `web-badge`, Expo logo splash, "Expo Starter" label in `app-tabs.web.tsx`).
 
@@ -156,6 +162,12 @@ PROJECT_NOTES.md
 | 2026-10-08 | Leave `babel.config.js` as is (`babel-preset-expo` with `jsxImportSource: "nativewind"` + `nativewind/babel`) | Tests showed it was not the cause of the crash |
 | 2026-10-08 | Set `reactCompiler` back to `true` in `app.json` | Was never the cause of the crash; Home works with it on |
 | 2026-10-08 | Streak start stored as ISO text in SQLite; `PRAGMA user_version` migrations; DB helpers take `db` as a parameter and live in `src/db/` | Keeps logic testable and `features/` pure |
+| 2026-10-09 | Streak start stored as ISO text string in SQLite | Matches Decision #1: store the date, never a counter |
+| 2026-10-09 | Schema versioning via `PRAGMA user_version` in `src/db/migrations.ts` | Later tables are just extra migration blocks |
+| 2026-10-09 | DB helpers in `src/db/` take `db` as a parameter, no hooks | Keeps them testable and `features/` pure |
+| 2026-10-09 | Reset keeps `best_streak_days` (max of old best and current) | Relapse is "reset with reflection", not a wipe |
+| 2026-10-09 | Jest via `jest-expo` preset; tests sit next to logic files, use relative imports | Files in `src/app/` become routes; `@/` not configured for Jest |
+| 2026-10-09 | Added `"types": ["jest"]` to `tsconfig.json` | TS 6 doesn't auto-load `@types/*` |
 
 ## 10. Debugging Lessons
 
@@ -165,6 +177,8 @@ PROJECT_NOTES.md
 * Useful checks: `npx expo-doctor`, `npx expo install --check`, `npm ls react react-dom react-native` (should show one React copy), `npx expo start -c` (clear cache).
 
 * note: that eslint and eslint-config-expo are dev dependencies, and that the eslint-disable comment in use-color-scheme.web.ts is intentional.
+* Lots of "Cannot find module" errors across files = `node_modules` is broken, not your code. Check `git status`, restore a deleted `package-lock.json` with `git restore`, delete `node_modules`, then `npm ci`.
+* `ECONNRESET` / "Exit handler never called" = network problem, not an npm bug. Set `npm config set fetch-retries 5`, rerun the same command (the cache keeps progress), or switch to a phone hotspot.
 
 ## 11. Workflow Rules (for me)
 
@@ -175,3 +189,4 @@ PROJECT_NOTES.md
 5. Check official Expo / NativeWind / Supabase docs for setup commands.
 6. Update Section 8 and 9 at the end of every session.
 7. Run `npx expo lint` and `npx tsc --noEmit` before calling a task done (per AGENTS.md).
+8. Never delete `package-lock.json`. Install one thing at a time an
