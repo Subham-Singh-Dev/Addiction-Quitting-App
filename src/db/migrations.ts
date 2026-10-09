@@ -1,21 +1,19 @@
-import { type SQLiteDatabase } from 'expo-sqlite';
+import type { SQLiteDatabase } from 'expo-sqlite';
 
-const DATABASE_VERSION = 1;
+const DATABASE_VERSION = 2;
 
-// Runs once when the database opens. Uses SQLite's built-in
-// `user_version` number to remember which migrations already ran.
 export async function migrateDbIfNeeded(db: SQLiteDatabase) {
-  const row = await db.getFirstAsync<{ user_version: number }>(
-    'PRAGMA user_version'
-  );
-  let currentVersion = row?.user_version ?? 0;
+  await db.execAsync('PRAGMA foreign_keys = ON;');
 
-  if (currentVersion >= DATABASE_VERSION) return;
+  const row = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
+  let version = row?.user_version ?? 0;
+  if (version >= DATABASE_VERSION) return;
 
-  if (currentVersion === 0) {
+  if (version === 0) {
+    // v1: trackers (keep your original v1 SQL here if it differs)
     await db.execAsync(`
       PRAGMA journal_mode = 'wal';
-      CREATE TABLE trackers (
+      CREATE TABLE IF NOT EXISTS trackers (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         streak_start_date TEXT NOT NULL,
@@ -23,11 +21,24 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase) {
         created_at TEXT NOT NULL
       );
     `);
-    currentVersion = 1;
+    version = 1;
   }
 
-  // Future changes go here as new blocks:
-  // if (currentVersion === 1) { ...; currentVersion = 2; }
+  if (version === 1) {
+    // v2: relapses (additive, nothing existing is touched)
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS relapses (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        tracker_id INTEGER NOT NULL REFERENCES trackers(id) ON DELETE CASCADE,
+        date TEXT NOT NULL,
+        reflection TEXT,
+        "trigger" TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_relapses_tracker_date
+        ON relapses(tracker_id, date);
+    `);
+    version = 2;
+  }
 
   await db.execAsync(`PRAGMA user_version = ${DATABASE_VERSION}`);
 }

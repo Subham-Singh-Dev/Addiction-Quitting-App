@@ -1,93 +1,95 @@
-import { useSQLiteContext } from "expo-sqlite";
-import { useEffect, useState } from "react";
-import { Alert, Pressable, Text, View } from "react-native";
-
+import { ReflectionModal } from '@/components/reflection-modal';
 import {
-  getDefaultTracker,
   getOrCreateDefaultTracker,
   resetTracker,
   type Tracker,
-} from "@/db/trackers";
-import { getStreakBreakdown } from "@/features/streak/calculateStreak";
+} from '@/db/trackers';
+import { getStreakBreakdown } from '@/features/streak/calculateStreak';
+import { useSQLiteContext } from 'expo-sqlite';
+import { useCallback, useEffect, useState } from 'react';
+import { Alert, Pressable, Text, View } from 'react-native';
 
-const pad = (n: number) => String(n).padStart(2, "0");
-
-export default function Index() {
+export default function HomeScreen() {
   const db = useSQLiteContext();
   const [tracker, setTracker] = useState<Tracker | null>(null);
   const [now, setNow] = useState(() => new Date());
+  const [reflecting, setReflecting] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  // Load the tracker from SQLite once (creates one on first launch)
-  useEffect(() => {
-    let cancelled = false;
-    getOrCreateDefaultTracker(db).then((t) => {
-      if (!cancelled) setTracker(t);
-    });
-    return () => {
-      cancelled = true;
-    };
+  const load = useCallback(async () => {
+    const defaultTracker = await getOrCreateDefaultTracker(db);
+    setTracker(defaultTracker);
   }, [db]);
 
-  // Tick every second
+  // FIX: Wrapped the async call explicitly to decouple direct execution from the effect body
+  useEffect(() => {
+    let isMounted = true;
+
+    async function initializeTracker() {
+      if (isMounted) {
+        await load();
+      }
+    }
+
+    initializeTracker();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [load]);
+
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
 
-  // All hooks are above this line. Early return must stay below them.
-  if (!tracker) {
-    return (
-      <View className="flex-1 items-center justify-center bg-indigo-600">
-        <Text className="text-xl text-indigo-200">Loading...</Text>
-      </View>
-    );
-  }
-
-  const { days, hours, minutes, seconds } = getStreakBreakdown(
-    tracker.streak_start_date,
-    now
-  );
-  const bestDays = Math.max(tracker.best_streak_days, days);
-
-  const handleReset = () => {
-    Alert.alert(
-      "Start again?",
-      "Your best streak is saved. A slip doesn't erase your progress.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Start again",
-          style: "destructive",
-          onPress: async () => {
-            await resetTracker(db, tracker.id, days);
-            const updated = await getDefaultTracker(db);
-            if (updated) setTracker(updated);
-          },
-        },
-      ]
-    );
+  const confirmSlip = () => {
+    Alert.alert('Reset streak?', 'Your best streak is kept.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'I slipped', style: 'destructive', onPress: () => setReflecting(true) },
+    ]);
   };
 
+  const finishReset = async (data: { reflection: string | null; trigger: string | null }) => {
+    if (!tracker || saving) return;
+    setSaving(true);
+    try {
+      await resetTracker(db, tracker.id, data);
+      await load();
+      setNow(new Date());
+      setReflecting(false);
+    } catch (e) {
+      Alert.alert('Could not reset', String(e));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!tracker) return <View className="flex-1 bg-black" />;
+
+  // ADAPT: match your getStreakBreakdown signature + return shape
+  const b = getStreakBreakdown(tracker.streak_start_date, now);
+
   return (
-    <View className="flex-1 items-center justify-center bg-indigo-600">
-      <Text className="text-8xl font-bold text-white">{days}</Text>
-      <Text className="mb-6 text-xl text-indigo-200">
-        {days === 1 ? "day" : "days"}
+    <View className="flex-1 items-center justify-center bg-black px-6">
+      {/* ADAPT: keep your existing counter JSX if it differs */}
+      <Text className="text-6xl font-bold text-white">{b.days}</Text>
+      <Text className="text-neutral-400">days</Text>
+      <Text className="mt-2 text-neutral-300">
+        {b.hours}h {b.minutes}m {b.seconds}s
       </Text>
-      <Text className="text-4xl font-semibold text-white">
-        {pad(hours)}:{pad(minutes)}:{pad(seconds)}
-      </Text>
+      <Text className="mt-6 text-neutral-400">Best: {tracker.best_streak_days} days</Text>
 
-      <Text className="mt-8 text-base text-indigo-200">
-        Best: {bestDays} {bestDays === 1 ? "day" : "days"}
-      </Text>
-
-      <Pressable
-        onPress={handleReset}
-        className="mt-10 rounded-full bg-white/20 px-8 py-3"
-      >
-        <Text className="text-base font-medium text-white">I slipped</Text>
+      <Pressable onPress={confirmSlip} className="mt-10 rounded-xl border border-red-500 px-6 py-3">
+        <Text className="text-red-400">I slipped</Text>
       </Pressable>
+
+      <ReflectionModal
+        visible={reflecting}
+        saving={saving}
+        onSave={finishReset}
+        onSkip={() => finishReset({ reflection: null, trigger: null })}
+      />
     </View>
   );
 }
