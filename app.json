@@ -8,11 +8,10 @@
     "scheme": "streakapp",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "package": "com.Subham-Singh-Dev.streak",
       "icon": "./assets/expo.icon"
     },
     "android": {
-      "package": "com.Subham-Singh-Dev.streak",
+      "package": "com.subham_singh_dev.streak",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
