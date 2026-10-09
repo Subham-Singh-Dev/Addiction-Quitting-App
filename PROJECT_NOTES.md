@@ -51,13 +51,15 @@ src/
   components/
     app-tabs.tsx             # NativeTabs (Home, Explore) for Android/iOS
     app-tabs.web.tsx         # Web version of tabs
+    reflection-modal.tsx     # Bottom-sheet form: trigger chips + text, Save / Skip  <-- done
     themed-text.tsx, themed-view.tsx, animated-icon*.tsx, ...   # Starter-template pieces
     ui/collapsible.tsx
   constants/theme.ts         # Colors, Fonts, Spacing (starter template)
+  constants/triggers.ts      # TRIGGERS chip list  <-- done
   hooks/                     # use-theme, use-color-scheme (starter template)
   db/
-    migrations.ts            # migrateDbIfNeeded (PRAGMA user_version), creates trackers table  <-- done
-    trackers.ts              # getDefaultTracker, createTracker, getOrCreateDefaultTracker, resetTracker  <-- done
+    migrations.ts            # v1 trackers, v2 relapses (PRAGMA user_version)
+    trackers.ts              # ...resetTracker(db, id, relapse) now also inserts a relapse in one transaction
   features/
     streak/
       calculateStreak.ts     # getStreakDays, getStreakBreakdown (pure logic)  <-- done
@@ -104,7 +106,7 @@ PROJECT_NOTES.md
 * [x] Streak start/reset using SQLite (Home loads from DB, "I slipped" resets, best streak saved)
 * [x] Jest setup (jest-expo)
 * [x] Unit tests for streak functions (real tests)
-* [ ] Reset with reflection (relapses table, migration v2)
+* [x] Reset with reflection (relapses table, migration v2)
 * [ ] Daily check-in + journal
 * [ ] XP, levels, basic milestones
 * [ ] App lock + local reminder notification
@@ -137,14 +139,14 @@ PROJECT_NOTES.md
 
 ## 8. Status
 
-* **Today (2026-10-09):** SQLite + reset flow + Jest setup and streak unit tests done and committed.
-* **Done:** environment, deps, NativeWind v4, streak calculation, Home live counter, SQLite `trackers` table with `PRAGMA user_version` migrations, Home loads start date from DB (persistence verified across app restarts), "I slipped" reset with confirm dialog, best streak saved and shown (verified with a faked 3-day streak), Jest + jest-expo installed, 16 streak unit tests passing, `tsc` and lint clean.
+* **Today (2026-10-09):** Reset with reflection done. Migration v2 (`relapses`), reflection modal, atomic reset + relapse insert. Tested Save and Skip; verified rollback by breaking the INSERT on purpose.
+* **Done:** environment, deps, NativeWind v4, streak calculation, Home live counter, SQLite `trackers` table with `PRAGMA user_version` migrations, Home loads start date from DB (persistence verified across app restarts), "I slipped" reset with confirm dialog, best streak saved and shown (verified with a faked 3-day streak), Jest + jest-expo installed, 16 streak unit tests passing, `tsc` and lint clean, relapses table, reflection modal, transactional reset.
 * **Release testing:** First EAS preview APK built and tested on a real phone; counter, persistence, reset, and best streak all work in a release build.
 * **Install tip:** A 113 MB phone download failed with "package appears to be invalid"; USB transfer fixed it.
 * **Config note:** `reactCompiler` is `true`.
 * **Next:**
-  1. Reset with reflection: migration v2 adds `relapses` table, reflection + trigger form.
-  2. Daily check-in + journal.
+  1. Daily check-in + journal.
+  2. XP, levels, basic milestones.
 * **Blocked / Questions:** (none)
 * **Known cleanup later:** starter-template leftovers (`explore.tsx`, `animated-icon`, `hint-row`, `web-badge`, Expo logo splash, "Expo Starter" label in `app-tabs.web.tsx`).
 
@@ -168,6 +170,10 @@ PROJECT_NOTES.md
 | 2026-10-09 | Added `"types": ["jest"]` to `tsconfig.json` | TS 6 doesn't auto-load `@types/*` |
 | 2026-10-09 | Distribute via GitHub Releases + EAS free-tier APK. Play Store deferred | Zero budget. Play needs a paid account, plus a 14-day closed test for new personal accounts |
 | 2026-10-09 | Android package ID `com.<name>.streak`, EAS manages the keystore | The ID is permanent. The same key on every build lets updates install over old versions |
+| 2026-10-09 | Reset + relapse insert run in one `withExclusiveTransactionAsync` | Never a reset without its record, or the reverse |
+| 2026-10-09 | Skip still logs a relapse row (null reflection/trigger) | Relapse history stays complete |
+| 2026-10-09 | Android back button disabled on the reflection sheet | Slip is already confirmed, so the user must pick Save or Skip |
+| 2026-10-09 | Data load in `index.tsx` runs inside an async function in `useEffect`, with an `isMounted` guard | Fixes the `react-hooks/set-state-in-effect` lint error and avoids setting state after unmount |
 
 ## 10. Debugging Lessons
 
@@ -180,6 +186,7 @@ PROJECT_NOTES.md
 * Lots of "Cannot find module" errors across files = `node_modules` is broken, not your code. Check `git status`, restore a deleted `package-lock.json` with `git restore`, delete `node_modules`, then `npm ci`.
 * `ECONNRESET` / "Exit handler never called" = network problem, not an npm bug. Set `npm config set fetch-retries 5`, rerun the same command (the cache keeps progress), or switch to a phone hotspot.
 * Big APK downloads on a phone can corrupt. Transfer by USB, and `adb install` shows the real error.
+* `react-hooks/set-state-in-effect` lint error = a state setter is called synchronously in an effect. Wrap the fetch in an `async` function inside the effect and guard it with an `isMounted` flag (set to `false` in the cleanup).
 
 ## 11. Workflow Rules (for me)
 
