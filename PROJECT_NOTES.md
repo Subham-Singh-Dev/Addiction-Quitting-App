@@ -61,7 +61,7 @@ src/
   features/
     streak/
       calculateStreak.ts     # getStreakDays, getStreakBreakdown (pure logic)  <-- done
-      calculateStreak.test.ts  # Jest tests (sanity test only so far)
+      calculateStreak.test.ts  # Jest tests for streak functions
     journal/                 # (empty)
     xp/                      # (empty)
   lib/                       # (empty) helpers (dates, security)
@@ -103,7 +103,7 @@ PROJECT_NOTES.md
 * [x] SQLite schema + migrations (trackers table)
 * [x] Streak start/reset using SQLite (Home loads from DB, "I slipped" resets, best streak saved)
 * [x] Jest setup (jest-expo)
-* [ ] Unit tests for streak functions (real tests)
+* [x] Unit tests for streak functions (real tests)
 * [ ] Reset with reflection (relapses table, migration v2)
 * [ ] Daily check-in + journal
 * [ ] XP, levels, basic milestones
@@ -137,13 +137,12 @@ PROJECT_NOTES.md
 
 ## 8. Status
 
-* **Today (2026-10-09):** SQLite + reset flow + Jest setup done and committed.
-* **Done:** environment, deps, NativeWind v4, streak calculation, Home live counter, SQLite `trackers` table with `PRAGMA user_version` migrations, Home loads start date from DB (persistence verified across app restarts), "I slipped" reset with confirm dialog, best streak saved and shown (verified with a faked 3-day streak), Jest + jest-expo installed, sanity test passing, `tsc` and lint clean.
+* **Today (2026-10-09):** SQLite + reset flow + Jest setup and streak unit tests done and committed.
+* **Done:** environment, deps, NativeWind v4, streak calculation, Home live counter, SQLite `trackers` table with `PRAGMA user_version` migrations, Home loads start date from DB (persistence verified across app restarts), "I slipped" reset with confirm dialog, best streak saved and shown (verified with a faked 3-day streak), Jest + jest-expo installed, 16 streak unit tests passing, `tsc` and lint clean.
 * **Config note:** `reactCompiler` is `true`.
 * **Next:**
-  1. Write real Jest tests for `calculateStreak.ts` (24h boundary, breakdown, future date, invalid input).
-  2. Reset with reflection: migration v2 adds `relapses` table, reflection + trigger form.
-  3. Daily check-in + journal.
+  1. Reset with reflection: migration v2 adds `relapses` table, reflection + trigger form.
+  2. Daily check-in + journal.
 * **Blocked / Questions:** (none)
 * **Known cleanup later:** starter-template leftovers (`explore.tsx`, `animated-icon`, `hint-row`, `web-badge`, Expo logo splash, "Expo Starter" label in `app-tabs.web.tsx`).
 
@@ -161,10 +160,7 @@ PROJECT_NOTES.md
 | 2026-10-08 | Home counter keeps only `now` in state and derives the breakdown from `streak_start_date` each render | Follows design decision #1: cannot drift |
 | 2026-10-08 | Leave `babel.config.js` as is (`babel-preset-expo` with `jsxImportSource: "nativewind"` + `nativewind/babel`) | Tests showed it was not the cause of the crash |
 | 2026-10-08 | Set `reactCompiler` back to `true` in `app.json` | Was never the cause of the crash; Home works with it on |
-| 2026-10-08 | Streak start stored as ISO text in SQLite; `PRAGMA user_version` migrations; DB helpers take `db` as a parameter and live in `src/db/` | Keeps logic testable and `features/` pure |
-| 2026-10-09 | Streak start stored as ISO text string in SQLite | Matches Decision #1: store the date, never a counter |
-| 2026-10-09 | Schema versioning via `PRAGMA user_version` in `src/db/migrations.ts` | Later tables are just extra migration blocks |
-| 2026-10-09 | DB helpers in `src/db/` take `db` as a parameter, no hooks | Keeps them testable and `features/` pure |
+| 2026-10-09 | SQLite stores the streak start as ISO text; migrations use `PRAGMA user_version`; DB helpers in `src/db/` take `db` as a parameter with no hooks | Matches Decision #1, keeps later schema changes additive, and keeps helpers testable while `features/` stays pure |
 | 2026-10-09 | Reset keeps `best_streak_days` (max of old best and current) | Relapse is "reset with reflection", not a wipe |
 | 2026-10-09 | Jest via `jest-expo` preset; tests sit next to logic files, use relative imports | Files in `src/app/` become routes; `@/` not configured for Jest |
 | 2026-10-09 | Added `"types": ["jest"]` to `tsconfig.json` | TS 6 doesn't auto-load `@types/*` |
@@ -189,4 +185,4 @@ PROJECT_NOTES.md
 5. Check official Expo / NativeWind / Supabase docs for setup commands.
 6. Update Section 8 and 9 at the end of every session.
 7. Run `npx expo lint` and `npx tsc --noEmit` before calling a task done (per AGENTS.md).
-8. Never delete `package-lock.json`. Install one thing at a time an
+8. Never delete `package-lock.json`. Install one thing at a time and run `npx expo install --check` after.
