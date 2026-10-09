@@ -40,6 +40,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "ccfa5e14-b54d-409a-ad2f-e632c9b810a0"
+      }
+    },
+    "owner": "subham-singh-devs-team"
   }
 }
