@@ -139,6 +139,8 @@ PROJECT_NOTES.md
 
 * **Today (2026-10-09):** SQLite + reset flow + Jest setup and streak unit tests done and committed.
 * **Done:** environment, deps, NativeWind v4, streak calculation, Home live counter, SQLite `trackers` table with `PRAGMA user_version` migrations, Home loads start date from DB (persistence verified across app restarts), "I slipped" reset with confirm dialog, best streak saved and shown (verified with a faked 3-day streak), Jest + jest-expo installed, 16 streak unit tests passing, `tsc` and lint clean.
+* **Release testing:** First EAS preview APK built and tested on a real phone; counter, persistence, reset, and best streak all work in a release build.
+* **Install tip:** A 113 MB phone download failed with "package appears to be invalid"; USB transfer fixed it.
 * **Config note:** `reactCompiler` is `true`.
 * **Next:**
   1. Reset with reflection: migration v2 adds `relapses` table, reflection + trigger form.
@@ -164,6 +166,8 @@ PROJECT_NOTES.md
 | 2026-10-09 | Reset keeps `best_streak_days` (max of old best and current) | Relapse is "reset with reflection", not a wipe |
 | 2026-10-09 | Jest via `jest-expo` preset; tests sit next to logic files, use relative imports | Files in `src/app/` become routes; `@/` not configured for Jest |
 | 2026-10-09 | Added `"types": ["jest"]` to `tsconfig.json` | TS 6 doesn't auto-load `@types/*` |
+| 2026-10-09 | Distribute via GitHub Releases + EAS free-tier APK. Play Store deferred | Zero budget. Play needs a paid account, plus a 14-day closed test for new personal accounts |
+| 2026-10-09 | Android package ID `com.<name>.streak`, EAS manages the keystore | The ID is permanent. The same key on every build lets updates install over old versions |
 
 ## 10. Debugging Lessons
 
@@ -175,6 +179,7 @@ PROJECT_NOTES.md
 * note: that eslint and eslint-config-expo are dev dependencies, and that the eslint-disable comment in use-color-scheme.web.ts is intentional.
 * Lots of "Cannot find module" errors across files = `node_modules` is broken, not your code. Check `git status`, restore a deleted `package-lock.json` with `git restore`, delete `node_modules`, then `npm ci`.
 * `ECONNRESET` / "Exit handler never called" = network problem, not an npm bug. Set `npm config set fetch-retries 5`, rerun the same command (the cache keeps progress), or switch to a phone hotspot.
+* Big APK downloads on a phone can corrupt. Transfer by USB, and `adb install` shows the real error.
 
 ## 11. Workflow Rules (for me)
 
