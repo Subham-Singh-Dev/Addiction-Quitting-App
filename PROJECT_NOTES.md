@@ -51,6 +51,7 @@ src/
   components/
     app-tabs.tsx             # NativeTabs (Home, Explore) for Android/iOS
     app-tabs.web.tsx         # Web version of tabs
+    checkin-card.tsx         # Daily check-in card: mood, note, save/edit  <-- done
     reflection-modal.tsx     # Bottom-sheet form: trigger chips + text, Save / Skip  <-- done
     themed-text.tsx, themed-view.tsx, animated-icon*.tsx, ...   # Starter-template pieces
     ui/collapsible.tsx
@@ -59,6 +60,7 @@ src/
   hooks/                     # use-theme, use-color-scheme (starter template)
   db/
     migrations.ts            # v1 trackers, v2 relapses (PRAGMA user_version)
+    checkins.ts              # Check-in database helpers
     trackers.ts              # ...resetTracker(db, id, relapse) now also inserts a relapse in one transaction
   features/
     streak/
@@ -139,14 +141,13 @@ PROJECT_NOTES.md
 
 ## 8. Status
 
-* **Today (2026-10-10):** Migration v3 done, `checkins` and `journal_entries` tables added, `src/db/checkins.ts` added, `src/features/journal/checkin.ts` plus tests done.
+* **Today (2026-10-10):** Check-in UI on Home (`checkin-card.tsx`): mood 1 to 5, optional note, “Checked in today” state, edit same day.
 * **Done:** environment, deps, NativeWind v4, streak calculation, Home live counter, SQLite `trackers` table with `PRAGMA user_version` migrations, Home loads start date from DB (persistence verified across app restarts), "I slipped" reset with confirm dialog, best streak saved and shown (verified with a faked 3-day streak), Jest + jest-expo installed, 16 streak unit tests passing, `tsc` and lint clean, relapses table, reflection modal, transactional reset, migration v3, `checkins` and `journal_entries` tables, `src/db/checkins.ts`, and check-in logic with tests.
 * **Release testing:** First EAS preview APK built and tested on a real phone; counter, persistence, reset, and best streak all work in a release build.
 * **Install tip:** A 113 MB phone download failed with "package appears to be invalid"; USB transfer fixed it.
 * **Config note:** `reactCompiler` is `true`.
 * **Next:**
-  1. Check-in UI on Home.
-  2. Journal screen.
+  1. Journal screen.
 * **Blocked / Questions:** (none)
 * **Known cleanup later:** starter-template leftovers (`explore.tsx`, `animated-icon`, `hint-row`, `web-badge`, Expo logo splash, "Expo Starter" label in `app-tabs.web.tsx`).
 
@@ -175,6 +176,7 @@ PROJECT_NOTES.md
 | 2026-10-09 | Android back button disabled on the reflection sheet | Slip is already confirmed, so the user must pick Save or Skip |
 | 2026-10-09 | Data load in `index.tsx` runs inside an async function in `useEffect`, with an `isMounted` guard | Fixes the `react-hooks/set-state-in-effect` lint error and avoids setting state after unmount |
 | 2026-10-10 | Check-in day = local calendar date, `UNIQUE(tracker_id, date)`, re-saving the same day updates it (Option A) | Forgiving, matches the gentle tone |
+| 2026-10-10 | Check-in card remounts via `key={todayKey}`; today's check-in reloads when the local date changes | App left open past midnight must not show yesterday's state |
 
 ## 10. Debugging Lessons
 
