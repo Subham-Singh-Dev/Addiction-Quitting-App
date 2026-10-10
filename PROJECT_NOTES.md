@@ -1,7 +1,7 @@
 # PROJECT_NOTES.md
 
 > Paste this at the start of every new Claude chat. Update **Section 8 (Status)** and **Section 9 (Decision Log)** after every work session.
-> Last updated: 2026-10-09
+> Last updated: 2026-10-10
 
 ## 1. Project Summary
 
@@ -102,10 +102,10 @@ PROJECT_NOTES.md
 * [x] Home screen live counter
 * [x] Home screen styled with NativeWind `className`
 * [x] Commit: "feat: live streak counter on home screen"
-* [x] SQLite schema + migrations (trackers table)
+* [x] SQLite schema + migrations (trackers, relapses, checkins, and journal_entries tables)
 * [x] Streak start/reset using SQLite (Home loads from DB, "I slipped" resets, best streak saved)
 * [x] Jest setup (jest-expo)
-* [x] Unit tests for streak functions (real tests)
+* [x] Unit tests for streak and check-in functions (real tests)
 * [x] Reset with reflection (relapses table, migration v2)
 * [ ] Daily check-in + journal
 * [ ] XP, levels, basic milestones
@@ -139,14 +139,14 @@ PROJECT_NOTES.md
 
 ## 8. Status
 
-* **Today (2026-10-09):** Reset with reflection done. Migration v2 (`relapses`), reflection modal, atomic reset + relapse insert. Tested Save and Skip; verified rollback by breaking the INSERT on purpose.
-* **Done:** environment, deps, NativeWind v4, streak calculation, Home live counter, SQLite `trackers` table with `PRAGMA user_version` migrations, Home loads start date from DB (persistence verified across app restarts), "I slipped" reset with confirm dialog, best streak saved and shown (verified with a faked 3-day streak), Jest + jest-expo installed, 16 streak unit tests passing, `tsc` and lint clean, relapses table, reflection modal, transactional reset.
+* **Today (2026-10-10):** Migration v3 done, `checkins` and `journal_entries` tables added, `src/db/checkins.ts` added, `src/features/journal/checkin.ts` plus tests done.
+* **Done:** environment, deps, NativeWind v4, streak calculation, Home live counter, SQLite `trackers` table with `PRAGMA user_version` migrations, Home loads start date from DB (persistence verified across app restarts), "I slipped" reset with confirm dialog, best streak saved and shown (verified with a faked 3-day streak), Jest + jest-expo installed, 16 streak unit tests passing, `tsc` and lint clean, relapses table, reflection modal, transactional reset, migration v3, `checkins` and `journal_entries` tables, `src/db/checkins.ts`, and check-in logic with tests.
 * **Release testing:** First EAS preview APK built and tested on a real phone; counter, persistence, reset, and best streak all work in a release build.
 * **Install tip:** A 113 MB phone download failed with "package appears to be invalid"; USB transfer fixed it.
 * **Config note:** `reactCompiler` is `true`.
 * **Next:**
-  1. Daily check-in + journal.
-  2. XP, levels, basic milestones.
+  1. Check-in UI on Home.
+  2. Journal screen.
 * **Blocked / Questions:** (none)
 * **Known cleanup later:** starter-template leftovers (`explore.tsx`, `animated-icon`, `hint-row`, `web-badge`, Expo logo splash, "Expo Starter" label in `app-tabs.web.tsx`).
 
@@ -174,6 +174,7 @@ PROJECT_NOTES.md
 | 2026-10-09 | Skip still logs a relapse row (null reflection/trigger) | Relapse history stays complete |
 | 2026-10-09 | Android back button disabled on the reflection sheet | Slip is already confirmed, so the user must pick Save or Skip |
 | 2026-10-09 | Data load in `index.tsx` runs inside an async function in `useEffect`, with an `isMounted` guard | Fixes the `react-hooks/set-state-in-effect` lint error and avoids setting state after unmount |
+| 2026-10-10 | Check-in day = local calendar date, `UNIQUE(tracker_id, date)`, re-saving the same day updates it (Option A) | Forgiving, matches the gentle tone |
 
 ## 10. Debugging Lessons
 
@@ -187,6 +188,7 @@ PROJECT_NOTES.md
 * `ECONNRESET` / "Exit handler never called" = network problem, not an npm bug. Set `npm config set fetch-retries 5`, rerun the same command (the cache keeps progress), or switch to a phone hotspot.
 * Big APK downloads on a phone can corrupt. Transfer by USB, and `adb install` shows the real error.
 * `react-hooks/set-state-in-effect` lint error = a state setter is called synchronously in an effect. Wrap the fetch in an `async` function inside the effect and guard it with an `isMounted` flag (set to `false` in the cleanup).
+* Re-sync the repo in the project after each session so the snapshot isn’t stale.
 
 ## 11. Workflow Rules (for me)
 
