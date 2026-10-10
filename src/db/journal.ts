@@ -32,10 +32,11 @@ export async function addEntry(
   input: { date: string; text: string; skillTags: string[] },
 ): Promise<number> {
   const result = await db.runAsync(
-    'INSERT INTO journal_entries (date, text, skill_tags) VALUES (?, ?, ?)',
+    'INSERT INTO journal_entries (date, text, skill_tags, created_at) VALUES (?, ?, ?, ?)',
     input.date,
     input.text.trim(),
     serializeSkillTags(input.skillTags),
+    new Date().toISOString(),
   );
   return result.lastInsertRowId;
 }

@@ -4,14 +4,27 @@ import { useCallback, useState } from 'react';
 import { Alert, FlatList, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { listEntries, type JournalEntry } from '@/db/journal';
+import { JournalEntryModal } from '@/components/journal-entry-modal';
+import {
+  addEntry,
+  deleteEntry,
+  listEntries,
+  updateEntry,
+  type JournalEntry,
+} from '@/db/journal';
+import { toLocalDateKey } from '@/features/journal/checkin';
 import { formatEntryDate } from '@/features/journal/formatEntryDate';
+
+// null = form closed. { entry: null } = new entry. { entry } = editing that entry.
+type FormState = { entry: JournalEntry | null } | null;
 
 export default function JournalScreen() {
   const db = useSQLiteContext();
   const [entries, setEntries] = useState<JournalEntry[] | null>(null);
+  const [form, setForm] = useState<FormState>(null);
+  const [saving, setSaving] = useState(false);
 
-  // Reloads every time this screen comes into focus (e.g. after saving an entry).
+  // Reloads every time this screen comes into focus.
   useFocusEffect(
     useCallback(() => {
       let isMounted = true;
@@ -34,9 +47,43 @@ export default function JournalScreen() {
     }, [db]),
   );
 
-  const handleNewEntry = () => {
-    // Step 4 replaces this with the entry form.
-    Alert.alert('Coming next', 'The entry form is built in step 4.');
+  const handleSave = async (data: { text: string; skillTags: string[] }) => {
+    if (saving || !form) return;
+    setSaving(true);
+    try {
+      if (form.entry) {
+        await updateEntry(db, form.entry.id, data);
+      } else {
+        await addEntry(db, { date: toLocalDateKey(new Date()), ...data });
+      }
+      setEntries(await listEntries(db));
+      setForm(null);
+    } catch (e) {
+      Alert.alert('Could not save entry', String(e));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const confirmDelete = () => {
+    const target = form?.entry;
+    if (!target) return;
+    Alert.alert('Delete this entry?', 'This cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteEntry(db, target.id);
+            setEntries(await listEntries(db));
+            setForm(null);
+          } catch (e) {
+            Alert.alert('Could not delete entry', String(e));
+          }
+        },
+      },
+    ]);
   };
 
   if (entries === null) return <View className="flex-1 bg-black" />;
@@ -46,7 +93,7 @@ export default function JournalScreen() {
       <View className="flex-row items-center justify-between px-6 pb-2 pt-4">
         <Text className="text-2xl font-bold text-white">Journal</Text>
         <Pressable
-          onPress={handleNewEntry}
+          onPress={() => setForm({ entry: null })}
           accessibilityRole="button"
           className="rounded-xl bg-white px-4 py-2"
         >
@@ -67,7 +114,11 @@ export default function JournalScreen() {
           </View>
         }
         renderItem={({ item }) => (
-          <View className="rounded-2xl bg-neutral-900 p-5">
+          <Pressable
+            onPress={() => setForm({ entry: item })}
+            accessibilityRole="button"
+            className="rounded-2xl bg-neutral-900 p-5"
+          >
             <Text className="text-xs text-neutral-500">{formatEntryDate(item.date)}</Text>
             <Text className="mt-2 text-white" numberOfLines={4}>
               {item.text}
@@ -81,9 +132,20 @@ export default function JournalScreen() {
                 ))}
               </View>
             )}
-          </View>
+          </Pressable>
         )}
       />
+
+      {/* Mounted only while open, so every open starts with fresh state. */}
+      {form && (
+        <JournalEntryModal
+          entry={form.entry}
+          saving={saving}
+          onSave={handleSave}
+          onDelete={form.entry ? confirmDelete : undefined}
+          onClose={() => setForm(null)}
+        />
+      )}
     </SafeAreaView>
   );
 }
