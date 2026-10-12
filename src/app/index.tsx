@@ -1,3 +1,4 @@
+import AppLockToggle from '@/components/app-lock-toggle';
 import { CheckinCard } from '@/components/checkin-card';
 import { ReflectionModal } from '@/components/reflection-modal';
 import { XpCard } from '@/components/xp-card'; // NEW
@@ -164,6 +165,8 @@ export default function HomeScreen() {
         onSave={finishReset}
         onSkip={() => finishReset({ reflection: null, trigger: null })}
       />
+
+      <AppLockToggle />
     </ScrollView>
   );
 }

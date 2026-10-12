@@ -6,6 +6,7 @@ import "../global.css";
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import AppTabs from '@/components/app-tabs';
+import LockGate from '@/components/lock-gate';
 import { migrateDbIfNeeded } from '@/db/migrations';
 
 SplashScreen.preventAutoHideAsync();
@@ -16,7 +17,9 @@ export default function TabLayout() {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <AnimatedSplashOverlay />
       <SQLiteProvider databaseName="streak.db" onInit={migrateDbIfNeeded}>
-        <AppTabs />
+        <LockGate>
+          <AppTabs />
+        </LockGate>
       </SQLiteProvider>
     </ThemeProvider>
   );

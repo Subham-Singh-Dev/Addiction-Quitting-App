@@ -1,6 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-const DATABASE_VERSION = 4;
+const DATABASE_VERSION = 5;
 
 export async function migrateDbIfNeeded(db: SQLiteDatabase) {
   await db.execAsync('PRAGMA foreign_keys = ON;');
@@ -79,6 +79,19 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase) {
       `);
       version = 4;
     }
+
+        if (version === 4) {
+          // v5: single-row settings (additive, nothing existing is touched)
+          await db.execAsync(`
+            CREATE TABLE IF NOT EXISTS settings (
+              id INTEGER PRIMARY KEY CHECK (id = 1),
+              lock_enabled INTEGER NOT NULL DEFAULT 0,
+              reminder_time TEXT
+            );
+            INSERT OR IGNORE INTO settings (id) VALUES (1);
+          `);
+          version = 5;
+        }
 
   await db.execAsync(`PRAGMA user_version = ${DATABASE_VERSION}`);
 }
