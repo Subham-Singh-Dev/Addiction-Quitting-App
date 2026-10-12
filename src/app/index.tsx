@@ -1,13 +1,15 @@
 import { CheckinCard } from '@/components/checkin-card';
 import { ReflectionModal } from '@/components/reflection-modal';
+import { XpCard } from '@/components/xp-card'; // NEW
 import { getTodayCheckin, saveCheckin, type Checkin } from '@/db/checkins';
 import {
   getOrCreateDefaultTracker,
   resetTracker,
   type Tracker,
 } from '@/db/trackers';
+import { awardStreakXp, getTotalXp } from '@/db/xp'; // NEW
 import { toLocalDateKey, type Mood } from '@/features/journal/checkin';
-import { getStreakBreakdown } from '@/features/streak/calculateStreak';
+import { getStreakBreakdown, getStreakDays } from '@/features/streak/calculateStreak'; // CHANGED
 import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
@@ -19,10 +21,14 @@ export default function HomeScreen() {
   const [now, setNow] = useState(() => new Date());
   const [reflecting, setReflecting] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [totalXp, setTotalXp] = useState(0); // NEW
 
   // Changes only when the local calendar day changes (e.g. app left open past midnight).
   const todayKey = toLocalDateKey(now);
   const trackerId = tracker?.id;
+  const startDate = tracker?.streak_start_date; // NEW
+  // NEW: a plain number that changes at most once per day, so it is a safe effect dependency.
+  const streakDays = startDate ? getStreakDays(startDate, now) : 0;
 
   const load = useCallback(async () => {
     const defaultTracker = await getOrCreateDefaultTracker(db);
@@ -62,13 +68,37 @@ export default function HomeScreen() {
     };
   }, [db, trackerId, todayKey]);
 
+  // NEW: record any XP the streak has earned, then refresh the total.
+  // Reruns when the streak day changes, and after a relapse (new start date).
+  // A relapse never removes XP: the ledger only ever grows.
+  useEffect(() => {
+    if (trackerId === undefined || startDate === undefined) return;
+    let isMounted = true;
+
+    async function syncXp(id: number, start: string, days: number) {
+      try {
+        await awardStreakXp(db, id, start, days);
+        const total = await getTotalXp(db);
+        if (isMounted) setTotalXp(total);
+      } catch (e) {
+        console.warn('XP sync failed', e);
+      }
+    }
+
+    syncXp(trackerId, startDate, streakDays);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [db, trackerId, startDate, streakDays]);
+
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
 
   const confirmSlip = () => {
-    Alert.alert('Reset streak?', 'Your best streak is kept.', [
+    Alert.alert('Reset streak?', 'Your best streak and XP are kept.', [ // CHANGED text
       { text: 'Cancel', style: 'cancel' },
       { text: 'I slipped', style: 'destructive', onPress: () => setReflecting(true) },
     ]);
@@ -118,6 +148,8 @@ export default function HomeScreen() {
         {b.hours}h {b.minutes}m {b.seconds}s
       </Text>
       <Text className="mt-6 text-neutral-400">Best: {tracker.best_streak_days} days</Text>
+
+      <XpCard totalXp={totalXp} />{/* NEW */}
 
       {/* key={todayKey} resets the card's inputs when a new day starts */}
       <CheckinCard key={todayKey} checkin={checkin} onSave={handleSaveCheckin} />

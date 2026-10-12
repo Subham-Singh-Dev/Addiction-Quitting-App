@@ -47,26 +47,32 @@ src/
   app/                       # Expo Router screens (every file = a screen)
     _layout.tsx              # Root: ThemeProvider, splash overlay, SQLiteProvider (streak.db) wrapping <AppTabs />, imports global.css
     index.tsx                # Home: live counter, Best streak, "I slipped" reset (loads from SQLite)  <-- working
-    explore.tsx              # Starter-template screen (to be removed/replaced later)
+    journal.tsx              # Journal list screen  <-- done
   components/
-    app-tabs.tsx             # NativeTabs (Home, Explore) for Android/iOS
+    app-tabs.tsx             # NativeTabs (Home, Journal) for Android/iOS
     app-tabs.web.tsx         # Web version of tabs
     checkin-card.tsx         # Daily check-in card: mood, note, save/edit  <-- done
+    journal-entry-modal.tsx  # Journal entry form modal  <-- done
     reflection-modal.tsx     # Bottom-sheet form: trigger chips + text, Save / Skip  <-- done
     themed-text.tsx, themed-view.tsx, animated-icon*.tsx, ...   # Starter-template pieces
     ui/collapsible.tsx
   constants/theme.ts         # Colors, Fonts, Spacing (starter template)
   constants/triggers.ts      # TRIGGERS chip list  <-- done
+  constants/skills.ts        # Skills tag list  <-- done
   hooks/                     # use-theme, use-color-scheme (starter template)
   db/
-    migrations.ts            # v1 trackers, v2 relapses (PRAGMA user_version)
+    migrations.ts            # v1 trackers, v2 relapses, v3 checkins + journal_entries (PRAGMA user_version)
     checkins.ts              # Check-in database helpers
+    journal.ts               # Journal entry database helpers  <-- done
     trackers.ts              # ...resetTracker(db, id, relapse) now also inserts a relapse in one transaction
   features/
     streak/
       calculateStreak.ts     # getStreakDays, getStreakBreakdown (pure logic)  <-- done
       calculateStreak.test.ts  # Jest tests for streak functions
-    journal/                 # (empty)
+    journal/
+      checkin.ts             # Check-in date and save helpers
+      formatEntryDate.ts     # Journal entry date formatting  <-- done
+      skillTags.ts           # Journal skill tag helpers  <-- done
     xp/                      # (empty)
   lib/                       # (empty) helpers (dates, security)
   store/                     # (empty) Zustand stores
@@ -109,7 +115,7 @@ PROJECT_NOTES.md
 * [x] Jest setup (jest-expo)
 * [x] Unit tests for streak and check-in functions (real tests)
 * [x] Reset with reflection (relapses table, migration v2)
-* [ ] Daily check-in + journal
+* [x] Daily check-in + journal
 * [ ] XP, levels, basic milestones
 * [ ] App lock + local reminder notification
 
@@ -141,15 +147,14 @@ PROJECT_NOTES.md
 
 ## 8. Status
 
-* **Today (2026-10-10):** Check-in UI on Home (`checkin-card.tsx`): mood 1 to 5, optional note, “Checked in today” state, edit same day.
-* **Done:** environment, deps, NativeWind v4, streak calculation, Home live counter, SQLite `trackers` table with `PRAGMA user_version` migrations, Home loads start date from DB (persistence verified across app restarts), "I slipped" reset with confirm dialog, best streak saved and shown (verified with a faked 3-day streak), Jest + jest-expo installed, 16 streak unit tests passing, `tsc` and lint clean, relapses table, reflection modal, transactional reset, migration v3, `checkins` and `journal_entries` tables, `src/db/checkins.ts`, and check-in logic with tests.
+* **Today (2026-10-10):** Journal DB helpers, skill tags constant, list screen, entry modal, Journal tab, Husky pre-commit.
+* **Done:** environment, deps, NativeWind v4, streak calculation, Home live counter, SQLite `trackers` table with `PRAGMA user_version` migrations, Home loads start date from DB (persistence verified across app restarts), "I slipped" reset with confirm dialog, best streak saved and shown (verified with a faked 3-day streak), Jest + jest-expo installed, 16 streak unit tests passing, `tsc` and lint clean, relapses table, reflection modal, transactional reset, migration v3, `checkins` and `journal_entries` tables, `src/db/checkins.ts`, check-in logic with tests, journal DB helpers, skill tags, journal list screen, entry modal, Journal tab, and Husky pre-commit.
 * **Release testing:** First EAS preview APK built and tested on a real phone; counter, persistence, reset, and best streak all work in a release build.
 * **Install tip:** A 113 MB phone download failed with "package appears to be invalid"; USB transfer fixed it.
 * **Config note:** `reactCompiler` is `true`.
-* **Next:**
-  1. Journal screen.
+* **Next:** XP.
 * **Blocked / Questions:** (none)
-* **Known cleanup later:** starter-template leftovers (`explore.tsx`, `animated-icon`, `hint-row`, `web-badge`, Expo logo splash, "Expo Starter" label in `app-tabs.web.tsx`).
+* **Known cleanup later:** starter-template leftovers (`animated-icon`, `hint-row`, `web-badge`, Expo logo splash, "Expo Starter" label in `app-tabs.web.tsx`).
 
 ## 9. Decision Log
 
@@ -177,6 +182,9 @@ PROJECT_NOTES.md
 | 2026-10-09 | Data load in `index.tsx` runs inside an async function in `useEffect`, with an `isMounted` guard | Fixes the `react-hooks/set-state-in-effect` lint error and avoids setting state after unmount |
 | 2026-10-10 | Check-in day = local calendar date, `UNIQUE(tracker_id, date)`, re-saving the same day updates it (Option A) | Forgiving, matches the gentle tone |
 | 2026-10-10 | Check-in card remounts via `key={todayKey}`; today's check-in reloads when the local date changes | App left open past midnight must not show yesterday's state |
+| 2026-10-10 | Husky pre-commit runs tsc and lint | Keep commits type-safe and lint-clean |
+| 2026-10-10 | Explore replaced by Journal | Journal is the next core local-first feature |
+| 2026-10-10 | Multiple journal entries per day allowed | Journaling should support several reflections on the same day |
 
 ## 10. Debugging Lessons
 
@@ -191,6 +199,7 @@ PROJECT_NOTES.md
 * Big APK downloads on a phone can corrupt. Transfer by USB, and `adb install` shows the real error.
 * `react-hooks/set-state-in-effect` lint error = a state setter is called synchronously in an effect. Wrap the fetch in an `async` function inside the effect and guard it with an `isMounted` flag (set to `false` in the cleanup).
 * Re-sync the repo in the project after each session so the snapshot isn’t stale.
+* A nested `Pressable` swallows taps, and `NOT NULL` columns without defaults must be filled on insert. Check the `CREATE TABLE` before writing helpers.
 
 ## 11. Workflow Rules (for me)
 

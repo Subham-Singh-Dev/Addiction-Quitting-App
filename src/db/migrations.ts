@@ -1,6 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-const DATABASE_VERSION = 3;
+const DATABASE_VERSION = 4;
 
 export async function migrateDbIfNeeded(db: SQLiteDatabase) {
   await db.execAsync('PRAGMA foreign_keys = ON;');
@@ -64,6 +64,21 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase) {
     `);
     version = 3;
   }
+
+    if (version === 3) {
+      // v4: XP ledger (additive, nothing existing is touched)
+      // ref_key is UNIQUE so the same award can never be inserted twice.
+      await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS xp_events (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          type TEXT NOT NULL,
+          amount INTEGER NOT NULL,
+          ref_key TEXT NOT NULL UNIQUE,
+          created_at TEXT NOT NULL
+        );
+      `);
+      version = 4;
+    }
 
   await db.execAsync(`PRAGMA user_version = ${DATABASE_VERSION}`);
 }
