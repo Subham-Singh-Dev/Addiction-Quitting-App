@@ -1,7 +1,7 @@
 # PROJECT_NOTES.md
 
 > Paste this at the start of every new Claude chat. Update **Section 8 (Status)** and **Section 9 (Decision Log)** after every work session.
-> Last updated: 2026-10-10
+> Last updated: 2026-10-12
 
 ## 1. Project Summary
 
@@ -54,6 +54,7 @@ src/
     checkin-card.tsx         # Daily check-in card: mood, note, save/edit  <-- done
     journal-entry-modal.tsx  # Journal entry form modal  <-- done
     reflection-modal.tsx     # Bottom-sheet form: trigger chips + text, Save / Skip  <-- done
+    xp-card.tsx              # Home XP card
     themed-text.tsx, themed-view.tsx, animated-icon*.tsx, ...   # Starter-template pieces
     ui/collapsible.tsx
   constants/theme.ts         # Colors, Fonts, Spacing (starter template)
@@ -61,10 +62,11 @@ src/
   constants/skills.ts        # Skills tag list  <-- done
   hooks/                     # use-theme, use-color-scheme (starter template)
   db/
-    migrations.ts            # v1 trackers, v2 relapses, v3 checkins + journal_entries (PRAGMA user_version)
+    migrations.ts            # v1 trackers, v2 relapses, v3 checkins + journal_entries, v4 xp_events (PRAGMA user_version)
     checkins.ts              # Check-in database helpers
     journal.ts               # Journal entry database helpers  <-- done
     trackers.ts              # ...resetTracker(db, id, relapse) now also inserts a relapse in one transaction
+    xp.ts                   # XP ledger database helpers
   features/
     streak/
       calculateStreak.ts     # getStreakDays, getStreakBreakdown (pure logic)  <-- done
@@ -73,7 +75,9 @@ src/
       checkin.ts             # Check-in date and save helpers
       formatEntryDate.ts     # Journal entry date formatting  <-- done
       skillTags.ts           # Journal skill tag helpers  <-- done
-    xp/                      # (empty)
+    xp/
+      xp.ts                  # XP rules, awards, and levels
+      xp.test.ts             # XP unit tests
   lib/                       # (empty) helpers (dates, security)
   store/                     # (empty) Zustand stores
   theme/                     # (empty) theme tokens (Gen Z / Millennial later)
@@ -116,7 +120,7 @@ PROJECT_NOTES.md
 * [x] Unit tests for streak and check-in functions (real tests)
 * [x] Reset with reflection (relapses table, migration v2)
 * [x] Daily check-in + journal
-* [ ] XP, levels, basic milestones
+* [x] XP, levels, basic milestones
 * [ ] App lock + local reminder notification
 
 **Phase 2: Basic theme + test with friends (Week 3)**
@@ -147,13 +151,14 @@ PROJECT_NOTES.md
 
 ## 8. Status
 
-* **Today (2026-10-10):** Journal DB helpers, skill tags constant, list screen, entry modal, Journal tab, Husky pre-commit.
-* **Done:** environment, deps, NativeWind v4, streak calculation, Home live counter, SQLite `trackers` table with `PRAGMA user_version` migrations, Home loads start date from DB (persistence verified across app restarts), "I slipped" reset with confirm dialog, best streak saved and shown (verified with a faked 3-day streak), Jest + jest-expo installed, 16 streak unit tests passing, `tsc` and lint clean, relapses table, reflection modal, transactional reset, migration v3, `checkins` and `journal_entries` tables, `src/db/checkins.ts`, check-in logic with tests, journal DB helpers, skill tags, journal list screen, entry modal, Journal tab, and Husky pre-commit.
+* **Today (2026-10-12):** XP ledger, levels, milestones, XP card on Home.
+* **Done:** environment, deps, NativeWind v4, streak calculation, Home live counter, SQLite `trackers` table with `PRAGMA user_version` migrations, Home loads start date from DB (persistence verified across app restarts), "I slipped" reset with confirm dialog, best streak saved and shown (verified with a faked 3-day streak), Jest + jest-expo installed, 16 streak unit tests passing, `tsc` and lint clean, relapses table, reflection modal, transactional reset, migration v3, `checkins` and `journal_entries` tables, `src/db/checkins.ts`, check-in logic with tests, journal DB helpers, skill tags, journal list screen, entry modal, Journal tab, migration v4 with `xp_events`, XP rules and level tests, XP ledger helpers, XP card, and Husky pre-commit.
 * **Release testing:** First EAS preview APK built and tested on a real phone; counter, persistence, reset, and best streak all work in a release build.
 * **Install tip:** A 113 MB phone download failed with "package appears to be invalid"; USB transfer fixed it.
 * **Config note:** `reactCompiler` is `true`.
-* **Next:** XP.
+* **Next:** App lock + local reminder notification.
 * **Blocked / Questions:** (none)
+* **Known limitation:** XP is local, and the device clock decides when a day completes, so it is easy to fake. That is fine for v1; when the leaderboard arrives in Phase 3, the server timestamp from Decision #3 becomes the source of truth.
 * **Known cleanup later:** starter-template leftovers (`animated-icon`, `hint-row`, `web-badge`, Expo logo splash, "Expo Starter" label in `app-tabs.web.tsx`).
 
 ## 9. Decision Log
@@ -185,6 +190,10 @@ PROJECT_NOTES.md
 | 2026-10-10 | Husky pre-commit runs tsc and lint | Keep commits type-safe and lint-clean |
 | 2026-10-10 | Explore replaced by Journal | Journal is the next core local-first feature |
 | 2026-10-10 | Multiple journal entries per day allowed | Journaling should support several reflections on the same day |
+| 2026-10-12 | XP is an append-only ledger (`xp_events`) with a `UNIQUE` `ref_key`, not a stored counter | XP must survive relapses, so it cannot be derived from `streak_start_date`; the unique key makes syncing idempotent |
+| 2026-10-12 | Award 10 XP per full streak day, plus milestone bonuses at days 7 / 30 / 100 (50 / 200 / 500) | Small daily rewards build the habit, while bigger rewards mark milestones |
+| 2026-10-12 | Relapse keeps all XP | "Reset with reflection, not shaming"; XP measures total effort |
+| 2026-10-12 | Level N starts at `50·N·(N−1)` XP | Gentle early levels, slower later |
 
 ## 10. Debugging Lessons
 
